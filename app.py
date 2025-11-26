@@ -19,6 +19,23 @@ def home():
     return "Welcome!"
 
 # adicionar o endpoint de adicionar produto (C DO CRUD)
+def add_produto():
+    session = Session()
+    produto = Produto(
+        nome=request.form.get("nome"),
+        quantidade=request.form.get("quantidade"),
+        valor=request.form.get("valor")
+    )
+    try:
+        # adicionando produto
+        session.add(produto)
+        # efetivando o camando de adição de novo item na tabela
+        session.commit()
+        return jsonify(produto.__dict__), 201
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 500
+
 # @app.route('/add_product', methods=['POST'])
 
 # 2 - endpoint to get product details by name from OFF API
