@@ -49,47 +49,68 @@ def add_product(form: ProductSchema):
         logger.warning(f"Erro: {error_msg}")
         return {"message": error_msg}, 400
 
-# 2 - endpoint to get product details by name from OFF API
-@app.route('/api/product/<name>')
-def get_product(name):
-    response = requests.get(OFF_API_PRODUCT.format(name=name))
-    return jsonify(response.json())
 
-@app.route('/get_produto/<produto_id>', methods=['GET'])
-def get_product_from_mvp_api(produto_id):
+@app.get('/product', tags=[product_tag],
+         responses={"200": ProductViewSchema, "404": ErrorSchema})
+def get_produto(query: ProdutoSearchSchema):
+    
+    """Search for a product in the local data base"""
+    product_name = query.name
+    logger.debug(f"Searching product locally: '{product_name}'")
+    
     session = Session()
-    produto = session.query(Produto).filter(Produto.id == produto_id).first()
-    if not produto:
-        error_msg = "Produto não encontrado na base :/"
-        return jsonify({"error": error_msg}), 404
-    else:
-        return jsonify(produto.__dict__), 200
-
+    try:
+        product = session.query(Product).filter(
+            Product.name == product_name
+        ).first()
+        
+        if not product:
+            error_msg = "Product not found."
+            logger.warning(f"'{product_name}' not found")
+            return {"message": error_msg}, 404
+        
+        logger.debug(f"Product found: '{product.name}'")
+        return product, 200
+        
+    finally:
+        session.close()  # ✅ IMPORTANTE: sempre fechar session
 
 # 3 - endpoint to get product details by barcode
-@app.route('/api/barcode/<barcode>')
+@app.get('/api/barcode/<barcode>')
 def get_product_by_barcode(barcode):
     response = requests.get(OFF_API_BARCODE.format(barcode=barcode))
     return jsonify(response.json())
 
 # 4 - endpoint to get product history (placeholder)
-@app.route('/api/products_history')
+@app.get('/api/products_history')
 def get_products_history():
     # Placeholder for product history retrieval logic
     return jsonify({"message": "Product history endpoint"})
 
-@app.route('/del_produto/<produto_id>', methods=['DELETE'])
-def del_produto(produto_id):
+@app.delete('/produto', tags=[product_tag],
+            responses={"200": ProductDelSchema, "404": ErrorSchema})
+def del_produto(query: ProductBuscaSchema):
+    """Deleta produto por nome"""
+    product_name = unquote(unquote(query.name))
+    logger.debug(f"Deletando produto: '{product_name}'")
+    
     session = Session()
-    count = session.query(Produto).filter(Produto.id == produto_id).delete()
-    session.commit()
-    if count ==1:
-        return jsonify({"message": f"Produto {produto_id} deletado com sucesso."}), 200
-    else: 
-        error_msg = "Produto não encontrado na base :/"
-        return jsonify({"error": error_msg}), 404
-
-
+    try:
+        count = session.query(Product).filter(
+            Product.name == product_name
+        ).delete()
+        session.commit()
+        
+        if count:
+            logger.debug(f"Product '{product_name}' deleted")
+            return {"message": "Producto removed", "name": product_name}, 200
+        else:
+            error_msg = "Produto não encontrado"
+            logger.warning(f"'{product_name}' não encontrado para deletar")
+            return {"message": error_msg}, 404
+            
+    finally:
+        session.close()
 
 
 # Run the Flask app
