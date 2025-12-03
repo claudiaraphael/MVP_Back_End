@@ -49,13 +49,15 @@ def get_produto(query: ProdutoSearchSchema):
 
 # adicionar o endpoint de adicionar produto (C DO CRUD)
 
-@app.post('/add_product', tags=[product_tag],
+@app.post('/add_product',
         responses={"200": ProductViewSchema, "409": ErrorSchema, "400": ErrorSchema}  )
 def add_product(form: ProductSchema):
     """ Adds a new product to the data base """
     product = Product(
         name=form.name,
-        barcode=form.barcode
+        barcode=form.barcode,
+        comments=form.comments,
+        sustainable_seals=form.sustainable_seals,
     )
     logger.debug(f"Adding a product: '{product}'")
 
