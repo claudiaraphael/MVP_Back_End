@@ -1,11 +1,15 @@
 from flask_openapi3 import OpenAPI
-from model import Session, Produto
+from model import Session, Product
 
 from schemas import ProductSchema, ProductViewSchema, ErrorSchema
 from logger import logger
+
 # TO DO:
 # - separate responsibilities in this file into different files: run.py, __init__.py, OFF endpoints, CRUD endpoints
+
+
 # import ennvironment variables
+
 app = Flask(__name__)
 
 
@@ -15,6 +19,33 @@ app = Flask(__name__)
 @app.route('/')
 def home():
     return "Welcome!"
+
+# 2 - Endpoint para pegar o produto da base de dados da OFF
+@app.get('/product', tags=[product_tag],
+         responses={"200": ProductViewSchema, "404": ErrorSchema})
+def get_produto(query: ProdutoSearchSchema):
+    
+    """Search for a product in the local data base"""
+    product_name = query.name
+    logger.debug(f"Searching product locally: '{product_name}'")
+    
+    session = Session()
+    try:
+        product = session.query(Product).filter(
+            Product.name == product_name
+        ).first()
+        
+        if not product:
+            error_msg = "Product not found."
+            logger.warning(f"'{product_name}' not found")
+            return {"message": error_msg}, 404
+        
+        logger.debug(f"Product found: '{product.name}'")
+        return product, 200
+        
+    finally:
+        session.close()  # ✅ IMPORTANTE: sempre fechar session
+
 
 # adicionar o endpoint de adicionar produto (C DO CRUD)
 
@@ -46,30 +77,6 @@ def add_product(form: ProductSchema):
         return {"message": error_msg}, 400
 
 
-@app.get('/product', tags=[product_tag],
-         responses={"200": ProductViewSchema, "404": ErrorSchema})
-def get_produto(query: ProdutoSearchSchema):
-    
-    """Search for a product in the local data base"""
-    product_name = query.name
-    logger.debug(f"Searching product locally: '{product_name}'")
-    
-    session = Session()
-    try:
-        product = session.query(Product).filter(
-            Product.name == product_name
-        ).first()
-        
-        if not product:
-            error_msg = "Product not found."
-            logger.warning(f"'{product_name}' not found")
-            return {"message": error_msg}, 404
-        
-        logger.debug(f"Product found: '{product.name}'")
-        return product, 200
-        
-    finally:
-        session.close()  # ✅ IMPORTANTE: sempre fechar session
 
 # 3 - endpoint to get product details by barcode
 
