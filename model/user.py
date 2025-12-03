@@ -2,9 +2,10 @@ from sqlalchemy import Column, Integer, String, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from typing import Union
-from model.base import Base
+from model.product import Product
+from extensions import db  # Importa o db globalmente definido
 
-class User(Base):
+class User(db.Model):
     __tablename__ = 'User'
 
     id = Column(Integer, primary_key=True)
