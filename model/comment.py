@@ -1,8 +1,6 @@
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey
+from extensions import db 
 from datetime import datetime
 from typing import Union
-from model.product import Product
-from extensions import db  # Importa o db globalmente definido
 
 class Comment(db.Model):
     __tablename__ = 'comment'
@@ -13,7 +11,13 @@ class Comment(db.Model):
     n_estrela = db.Column(db.Integer)
     date_inserted = db.Column(db.DateTime, default=datetime.now())
     
-    product = db.Column(db.Integer, db.ForeignKey('product.pk_product'), nullable=False)
+    # Correção: O campo que armazena a chave estrangeira (FK) é geralmente nomeado com '_id'
+    # Ele usa db.ForeignKey e aponta para 'tablename.column_name'
+    product_id = db.Column(db.Integer, db.ForeignKey('product.pk_product'), nullable=False)
+    
+    # Relação: Permite acessar o objeto Product a partir do Comment
+    product = db.relationship("Product", backref=db.backref('comments_list', lazy=True))
+
 
     def __init__(self, author: str, text: str, n_estrela: int = 0, 
              date_inserted: Union[datetime, None] = None):
@@ -23,4 +27,5 @@ class Comment(db.Model):
         if date_inserted:
             self.date_inserted = date_inserted
 
-
+    def __repr__(self):
+        return f'<Comment by {self.author}>'
